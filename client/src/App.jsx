@@ -15,10 +15,10 @@ export default function App() {
       <Routes>
       <Route path="/" element={<Home />} />
       <Route path="/about" element={<About />} />
-      <Route path="/Projects" element={<Projects />} />
-      <Route path="/SignIn" element={<SignIn />} />
-      <Route path="/SignUp" element={<SignUp />} />
-      <Route path="/DashBoard" element={<Dashboard />} />
+      <Route path="/projects" element={<Projects />} />
+      <Route path="/sign-in" element={<SignIn />} />
+      <Route path="/sign-up" element={<SignUp />} />
+      <Route path="/dashBoard" element={<Dashboard />} />
       </Routes>
       </BrowserRouter>
     </div>
