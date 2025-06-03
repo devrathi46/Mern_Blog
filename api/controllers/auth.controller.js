@@ -13,7 +13,7 @@ const hashedpassword=bcryptjs.hashSync(password,10);
     const newUser=new User({
         username,
         email,
-        password,
+        password:hashedpassword,
     });
     try{
     await newUser.save();

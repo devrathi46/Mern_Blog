@@ -14,16 +14,13 @@ mongoose.connect(process.env.Mongo)
 });
 const app=express();
  
-
-app.use(express.json());
-
-
 app.listen(3000,()=>{
     console.log('Server is running on port 3000')
 });
 
+app.use(express.json());
 app.use('/api/user',userRoutes);
-app.use('/api/auth',authRoutes)
+app.use('/api/auth',authRoutes);
 
 app.use((err,req,res,next) =>{
     const statusCode=err.statusCode||500;
