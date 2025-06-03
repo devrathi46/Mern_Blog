@@ -9,15 +9,15 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/dhruvgarg4521/Mern-Folder.git"
+    "url": "git+https://github.com/devrathi46/Mern-Blog.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/dhruvgarg4521/Mern-Folder/issues"
+    "url": "https://github.com/devrathi46/Mern-Blog/issues"
   },
-  "homepage": "https://github.com/dhruvgarg4521/Mern-Folder#readme",
+  "homepage": "https://github.com/devrathi46/Mern-Blog#readme",
   "dependencies": {
     "bcryptjs": "^3.0.2",
     "dotenv": "^16.5.0",
