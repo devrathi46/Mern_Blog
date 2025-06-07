@@ -1,37 +1,85 @@
-import { Alert, Button, FileInput, Select, TextInput, Textarea } from 'flowbite-react';
+import { Alert, Button, FileInput, Select, TextInput } from 'flowbite-react';
+import {
+  getDownloadURL,
+  getStorage,
+  ref,
+  uploadBytesResumable,
+} from 'firebase/storage';
+import { app } from '../firebase';
 import { useState } from 'react';
+import { CircularProgressbar } from 'react-circular-progressbar';
+import 'react-circular-progressbar/dist/styles.css';
+import { useNavigate } from 'react-router-dom';
 
 export default function CreatePost() {
   const [file, setFile] = useState(null);
+  const [imageUploadProgress, setImageUploadProgress] = useState(null);
+  const [imageUploadError, setImageUploadError] = useState(null);
   const [formData, setFormData] = useState({});
-  const [error, setError] = useState(null);
+  const [publishError, setPublishError] = useState(null);
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.id]: e.target.value });
-  };
+  const navigate = useNavigate();
 
-  const handleFileChange = (e) => {
-    const selectedFile = e.target.files[0];
-    if (selectedFile && selectedFile.size > 2 * 1024 * 1024) {
-      setError('Image must be less than 2MB');
-      setFile(null);
-    } else {
-      setError(null);
-      setFile(selectedFile);
+  const handleUploadImage = async () => {
+    try {
+      if (!file) {
+        setImageUploadError('Please select an image');
+        return;
+      }
+      setImageUploadError(null);
+      const storage = getStorage(app);
+      const fileName = new Date().getTime() + '-' + file.name;
+      const storageRef = ref(storage, fileName);
+      const uploadTask = uploadBytesResumable(storageRef, file);
+      uploadTask.on(
+        'state_changed',
+        (snapshot) => {
+          const progress =
+            (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+          setImageUploadProgress(progress.toFixed(0));
+        },
+        (error) => {
+          setImageUploadError('Image upload failed');
+          setImageUploadProgress(null);
+        },
+        () => {
+          getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
+            setImageUploadProgress(null);
+            setImageUploadError(null);
+            setFormData({ ...formData, image: downloadURL });
+          });
+        }
+      );
+    } catch (error) {
+      setImageUploadError('Image upload failed');
+      setImageUploadProgress(null);
+      console.log(error);
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.title || !formData.category || !formData.content) {
-      setError('Please fill all fields');
-      return;
+    try {
+      const res = await fetch('/api/post/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setPublishError(data.message);
+        return;
+      }
+
+      if (res.ok) {
+        setPublishError(null);
+        navigate(`/post/${data.slug}`);
+      }
+    } catch (error) {
+      setPublishError('Something went wrong');
     }
-    console.log({
-      ...formData,
-      imagePreview: file ? URL.createObjectURL(file) : null,
-    });
-    alert('Post submitted (check console for data)');
   };
 
   return (
@@ -45,42 +93,71 @@ export default function CreatePost() {
             required
             id='title'
             className='flex-1'
-            onChange={handleChange}
+            onChange={(e) =>
+              setFormData({ ...formData, title: e.target.value })
+            }
           />
-          <Select id='category' required onChange={handleChange}>
-            <option value=''>Select a category</option>
+          <Select
+            onChange={(e) =>
+              setFormData({ ...formData, category: e.target.value })
+            }
+          >
+            <option value='uncategorized'>Select a category</option>
             <option value='javascript'>JavaScript</option>
             <option value='reactjs'>React.js</option>
             <option value='nextjs'>Next.js</option>
           </Select>
         </div>
-
-        <FileInput
-          type='file'
-          accept='image/*'
-          onChange={handleFileChange}
-        />
-        {file && (
+        <div className='flex gap-4 items-center justify-between border-4 border-teal-500 border-dotted p-3'>
+          <FileInput
+            type='file'
+            accept='image/*'
+            onChange={(e) => setFile(e.target.files[0])}
+          />
+          <Button
+            type='button'
+            gradientDuoTone='purpleToBlue'
+            size='sm'
+            outline
+            onClick={handleUploadImage}
+            disabled={imageUploadProgress}
+          >
+            {imageUploadProgress ? (
+              <div className='w-16 h-16'>
+                <CircularProgressbar
+                  value={imageUploadProgress}
+                  text={`${imageUploadProgress || 0}%`}
+                />
+              </div>
+            ) : (
+              'Upload Image'
+            )}
+          </Button>
+        </div>
+        {imageUploadError && <Alert color='failure'>{imageUploadError}</Alert>}
+        {formData.image && (
           <img
-            src={URL.createObjectURL(file)}
-            alt='Preview'
-            className='w-full h-72 object-cover rounded-md'
+            src={formData.image}
+            alt='upload'
+            className='w-full h-72 object-cover'
           />
         )}
-
-        <Textarea
-          id='content'
-          placeholder='Write your post...'
-          rows={10}
-          onChange={handleChange}
+        <textarea
+          className='border p-2 rounded-md h-72'
+          placeholder='Write something...'
           required
-        />
-
-        {error && <Alert color='failure'>{error}</Alert>}
-
+          onChange={(e) =>
+            setFormData({ ...formData, content: e.target.value })
+          }
+        ></textarea>
         <Button type='submit' gradientDuoTone='purpleToPink'>
           Publish
         </Button>
+        {publishError && (
+          <Alert className='mt-5' color='failure'>
+            {publishError}
+          </Alert>
+        )}
       </form>
     </div>
   );
